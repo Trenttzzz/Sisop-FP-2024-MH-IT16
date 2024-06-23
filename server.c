@@ -17,8 +17,8 @@
 #define MAX_CHANNELS 50
 #define MAX_ROOMS 20
 #define MAX_MESSAGE_LENGTH 1024
-#define CHANNELS_CSV "./DiscoritIT/channels.csv"
-#define USERS_CSV "./DiscoritIT/users.csv"
+#define CHANNELS_CSV "/home/zaa/Desktop/sisop/fp-sisop/DiscorIT/channels.csv"
+#define USERS_CSV "/home/zaa/Desktop/sisop/fp-sisop/DiscorIT/users.csv"
 #define BCRYPT_HASHSIZE 64
 
 // User and Channel structures
@@ -70,7 +70,7 @@ void write_channels_to_csv();
 bool register_user(char* username, char* password);
 bool login_user(char* username, char* password);
 void make_channel(char* name, char* key);
-void list_channels(int client_socket);
+void list_channels(int client_socket, char* username);
 void join_channel(int client_socket, char* channel_name, char* key);
 void make_room(char* channel_name, char* room_name);
 void list_rooms(int client_socket, char* channel_name);
@@ -158,36 +158,43 @@ void *handle_client(void *socket_desc) {
         snprintf(response, sizeof(response), "[%s] %s\n", logged_in_username, message);
         send(sock, response, strlen(response), 0);
 
-        if (strcmp(command, "LIST") == 0) {
-            char *type = strtok(NULL, " ");
-            if (strcmp(type, "CHANNEL") == 0) {
-                list_channels(sock);
-            } else if (strcmp(type, "ROOM") == 0) {
-                char *channel_name = strtok(NULL, " ");
-                list_rooms(sock, channel_name);
-            }
-        } else if (strcmp(command, "JOIN") == 0) {
-            char *channel_or_room = strtok(NULL, " ");
+        // Penanganan perintah channel
+        if (strcmp(command, "CREATE") == 0 && strcmp(strtok(NULL, " "), "CHANNEL") == 0) {
+            char *channel_name = strtok(NULL, " ");
+            char *dash_k = strtok(NULL, " ");
             char *key = strtok(NULL, " ");
-            if (key == NULL) {
-                join_room(sock, NULL, channel_or_room);
+
+            if (channel_name && dash_k && key && strcmp(dash_k, "-k") == 0) {
+                make_channel(channel_name, key);
+                snprintf(response, sizeof(response), "Channel %s dibuat\n", channel_name);
+                send(sock, response, strlen(response), 0);
             } else {
-                join_channel(sock, channel_or_room, key);
+                send(sock, "Format CREATE CHANNEL salah\n", 30, 0);
             }
-        } else if (strcmp(command, "MAKE") == 0) {
-            char *type = strtok(NULL, " ");
-            char *name = strtok(NULL, " ");
-            if (strcmp(type, "CHANNEL") == 0) {
-                char *key = strtok(NULL, " ");
-                make_channel(name, key);
-            } else if (strcmp(type, "ROOM") == 0) {
-                char *channel_name = strtok(NULL, " ");
-                make_room(channel_name, name);
+        } else if (strcmp(command, "EDIT") == 0 && strcmp(strtok(NULL, " "), "CHANNEL") == 0) {
+            char *old_channel_name = strtok(NULL, " ");
+            char *to = strtok(NULL, " ");
+            char *new_channel_name = strtok(NULL, " ");
+
+            if (old_channel_name && to && new_channel_name && strcmp(to, "TO") == 0) {
+                // ... (logika untuk mengubah nama channel)
+                snprintf(response, sizeof(response), "%s berhasil diubah menjadi %s\n", old_channel_name, new_channel_name);
+                send(sock, response, strlen(response), 0);
+            } else {
+                send(sock, "Format EDIT CHANNEL salah\n", 28, 0);
             }
-        } else if (strcmp(command, "QUIT") == 0) {
-            break;
-        } else {
-            send(sock, "Perintah tidak dikenal\n", 24, 0);
+        } else if (strcmp(command, "DEL") == 0 && strcmp(strtok(NULL, " "), "CHANNEL") == 0) {
+            char *channel_name = strtok(NULL, " ");
+
+            if (channel_name) {
+                // ... (logika untuk menghapus channel)
+                snprintf(response, sizeof(response), "%s berhasil dihapus\n", channel_name);
+                send(sock, response, strlen(response), 0);
+            } else {
+                send(sock, "Format DEL CHANNEL salah\n", 27, 0);
+            }
+        } else if (strcmp(command, "LIST") == 0 && strcmp(strtok(NULL, " "), "CHANNEL") == 0){
+            list_channels(sock, logged_in_username);
         }
     }
 
@@ -250,26 +257,38 @@ int main() {
     return 0;
 }
 
-// read users.csv
+// Function to read users from CSV
 void read_users_from_csv() {
     FILE *file = fopen(USERS_CSV, "r");
     if (!file) {
-        perror("Failed to open users.csv");
+        // File tidak ada, buat file baru dengan header
+        file = fopen(USERS_CSV, "w");
+        if (file) {
+            fprintf(file, "id,name,password,global_role\n");
+            fclose(file);
+        } else {
+            perror("Gagal membuat users.csv");
+        }
         return;
     }
 
     char line[1024];
-    user_count = 0;
+    user_count = 1; 
     while (fgets(line, sizeof(line), file)) {
-        if (user_count == 0) {
-            // Skip header line
+        // Skip header line jika ada
+        if (user_count == 0 && strcmp(line, "id,name,password,global_role\n") == 0) {
+            user_count++;
             continue;
         }
-        sscanf(line, "%d,%49[^,],%63[^,],%9[^\n]", 
+
+        // Memastikan string tidak melebihi ukuran array
+        line[strcspn(line, "\n")] = 0; 
+        sscanf(line, "%d,%49[^,],%63[^,],%9s",
                &users[user_count].id, 
                users[user_count].name, 
                users[user_count].password, 
                users[user_count].global_role);
+
         user_count++;
     }
     fclose(file);
@@ -277,14 +296,18 @@ void read_users_from_csv() {
 
 // Function to write users to CSV
 void write_users_to_csv() {
-    FILE *file = fopen(USERS_CSV, "w");
+    FILE *file = fopen(USERS_CSV, "a"); // Mode append
     if (!file) {
         perror("Failed to open users.csv");
         return;
     }
-    for (int i = 1; i < user_count; i++) {
-        fprintf(file, "%d,%s,%s,%s\n", users[i].id, users[i].name, users[i].password, users[i].global_role);
-    }
+
+    fprintf(file, "%d,%s,%s,%s\n", 
+            users[user_count - 1].id, 
+            users[user_count - 1].name, 
+            users[user_count - 1].password, 
+            users[user_count - 1].global_role);
+
     fclose(file);
 }
 
@@ -292,33 +315,44 @@ void write_users_to_csv() {
 void read_channels_from_csv() {
     FILE *file = fopen(CHANNELS_CSV, "r");
     if (!file) {
-        perror("Failed to open channels.csv");
+        // File tidak ada, buat file baru dengan header
+        file = fopen(CHANNELS_CSV, "w");
+        if (file) {
+            fprintf(file, "id,name,key\n");
+            fclose(file);
+        } else {
+            perror("Gagal membuat channels.csv");
+        }
         return;
     }
 
     char line[1024];
-    channel_count = 0;
+    channel_count = 0; // Mulai dari indeks 0
+
+    // Lewati header line jika ada
+    fgets(line, sizeof(line), file);  
+
     while (fgets(line, sizeof(line), file)) {
-        if (channel_count == 0) {
-            // Skip header line
-            channel_count++;
-            continue;
-        }
-        sscanf(line, "%d,%49[^,],%59[^,]", &channels[channel_count].id, channels[channel_count].name, channels[channel_count].key);
+        line[strcspn(line, "\n")] = 0; // Hapus karakter newline dari akhir baris
+        sscanf(line, "%d,%49[^,],%63s",
+               &channels[channel_count].id,
+               channels[channel_count].name,
+               channels[channel_count].key);
         channel_count++;
     }
+
     fclose(file);
 }
 
 // Function to write channels to CSV
 void write_channels_to_csv() {
-    FILE *file = fopen(CHANNELS_CSV, "w");
+    FILE *file = fopen(CHANNELS_CSV, "w"); // Mode overwrite
     if (!file) {
-        perror("Failed to open channels.csv");
+        perror("Gagal membuka channels.csv");
         return;
     }
 
-    fprintf(file, "id,name,key\n");
+    fprintf(file, "id,name,key\n"); // Tulis header
     for (int i = 0; i < channel_count; i++) {
         fprintf(file, "%d,%s,%s\n", channels[i].id, channels[i].name, channels[i].key);
     }
@@ -379,29 +413,99 @@ bool login_user(char* username, char* password) {
 
 // Function to create a new channel
 void make_channel(char* name, char* key) {
+    // Cek apakah channel sudah ada
     for (int i = 0; i < channel_count; i++) {
         if (strcmp(channels[i].name, name) == 0) {
             return; // Channel already exists
         }
     }
 
+    // Buat direktori channel di dalam folder "DiscoritIT"
+    char channel_dir[100];
+    snprintf(channel_dir, sizeof(channel_dir), "./DiscorIT/%s", name);
+    if (mkdir(channel_dir, 0777) == -1) {
+        perror("Gagal membuat direktori channel");
+        return;
+    }
+
+    // --- Tambahan untuk membuat folder admin ---
+    char admin_path[200]; // Path untuk folder admin
+    snprintf(admin_path, sizeof(admin_path), "%s/admin", channel_dir);
+    if (mkdir(admin_path, 0777) == -1) {
+        perror("Gagal membuat direktori admin");
+        return;
+    }
+
+    // --- Membuat file auth.csv ---
+    char auth_file_path[210]; // Path untuk file auth.csv
+    snprintf(auth_file_path, sizeof(auth_file_path), "%s/auth.csv", admin_path);
+
+    FILE *auth_file = fopen(auth_file_path, "w");
+    if (auth_file == NULL) {
+        perror("Gagal membuat file auth.csv");
+        return;
+    }
+    fprintf(auth_file, "id_user,name,role\n"); // Tulis header
+    fclose(auth_file);
+
+    // --- Membuat file user.log ---
+    char user_log_path[210]; // Path untuk file user.log
+    snprintf(user_log_path, sizeof(user_log_path), "%s/user.log", admin_path);
+    
+    FILE *user_log_file = fopen(user_log_path, "w");
+    if (user_log_file == NULL) {
+        perror("Gagal membuat file user.log");
+        return;
+    }
+    fclose(user_log_file);
+
+    // Tambahkan channel baru ke array channels
     channels[channel_count].id = channel_count;
-    strcpy(channels[channel_count].name, name);
+    strncpy(channels[channel_count].name, name, sizeof(channels[channel_count].name) - 1);
+    channels[channel_count].name[sizeof(channels[channel_count].name) - 1] = '\0'; // Pastikan string diakhiri dengan null terminator
+
     char* salt = generate_salt();
     char* hashed_key = bcrypt(key, salt);
-    strcpy(channels[channel_count].key, hashed_key); // Store hashed key
+    strncpy(channels[channel_count].key, hashed_key, sizeof(channels[channel_count].key) - 1);
+    channels[channel_count].key[sizeof(channels[channel_count].key) - 1] = '\0';
+
     channel_count++;
 
+    // Tulis data channel ke channels.csv
     write_channels_to_csv();
 }
 
 // Function to list all channels
-void list_channels(int client_socket) {
-    char buffer[MAX_MESSAGE_LENGTH] = "Channels:\n";
-    for (int i = 0; i < channel_count; i++) {
-        strcat(buffer, channels[i].name);
-        strcat(buffer, "\n");
+void list_channels(int client_socket, char *username) {
+    char buffer[MAX_MESSAGE_LENGTH]; // Tidak perlu inisialisasi dengan "Channels:\n" lagi
+    FILE *file = fopen(CHANNELS_CSV, "r");
+    if (!file) {
+        perror("Gagal membuka channels.csv");
+        snprintf(buffer, sizeof(buffer), "Error: Terjadi kesalahan saat membaca daftar channel.\n");
+        send(client_socket, buffer, strlen(buffer), 0);
+        return;
     }
+
+    // Format awal pesan sesuai permintaan
+    snprintf(buffer, sizeof(buffer), "[%s] LIST CHANNEL\n", username);
+
+    char line[1024];
+    // Skip header line
+    fgets(line, sizeof(line), file); 
+
+    while (fgets(line, sizeof(line), file) != NULL) {
+        char channel_name[50];
+        sscanf(line, "%*d,%49[^,],%*s", channel_name);
+
+        strcat(buffer, channel_name);
+        strcat(buffer, " ");  // Tambahkan spasi setelah setiap nama channel
+    }
+
+    fclose(file);
+
+    // Hapus spasi berlebih di akhir
+    buffer[strcspn(buffer, "\n")] = 0;  
+
     send(client_socket, buffer, strlen(buffer), 0);
 }
 
@@ -444,8 +548,8 @@ void send_message(int client_socket, char* channel_name, char* room_name, char* 
 
 // Function to log activity in a channel
 void log_activity(char* channel_name, char* activity) {
-    char path[100];
-    sprintf(path, "./channels/%s/log.csv", channel_name);
+    char path[210];
+    sprintf(path, "./channels/%s/user.log", channel_name);
     FILE *file = fopen(path, "a");
     if (file) {
         fprintf(file, "%s\n", activity);
