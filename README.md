@@ -7,10 +7,13 @@
    ```
 2. Buat tree seperti berikut
    ```bash
-    ├── channels.csv
-    ├── discorit.c
-    ├── server.c
-    └── users.csv   
+      ├── DiscoritIT
+      │   ├── channels.csv
+      │   └── users.csv
+      ├── discorit
+      ├── discorit.c
+      ├── server
+      └── server.c  
    ```
 
 3. Untuk fitur sudah bisa Login dan Register, lalu tercatat pada users.csv nya.
