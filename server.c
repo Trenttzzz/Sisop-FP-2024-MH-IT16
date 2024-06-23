@@ -17,8 +17,8 @@
 #define MAX_CHANNELS 50
 #define MAX_ROOMS 20
 #define MAX_MESSAGE_LENGTH 1024
-#define CHANNELS_CSV "./channels.csv"
-#define USERS_CSV "./users.csv"
+#define CHANNELS_CSV "./DiscoritIT/channels.csv"
+#define USERS_CSV "./DiscoritIT/users.csv"
 #define BCRYPT_HASHSIZE 64
 
 // User and Channel structures
