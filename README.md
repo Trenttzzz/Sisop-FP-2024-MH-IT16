@@ -145,11 +145,21 @@
 
    - **Delete chat**
 
-      *isi screenshot or copy dari terminalnya
+      ```bash
+      [qurbancare/care/urban] DEL CHAT 3
+      [qurbancare/care/urban] CHAT DELETED
+      ```
 
    - **Edit Chat**
 
-      *isi screenshot or copy dari terminalnya
+      ```bash
+      [qurbancare/care/urban] CHAT “hallo”
+      [qurbancare/care/urban] SEE CHAT
+      sebelumnya
+      [qurbancare/care/urban] EDIT CHAT 3 “hi”
+      [05/06/2024 23:22:12][3][qurbancare] “hi”
+      sesudahnya
+      ```
 
 ### C. Root
 
@@ -267,21 +277,30 @@ beirkut adalah isi dari `auth.csv`
 
    - Contoh:
 
-      *screenshot / copy terminal dari perintah ban
+      ```bash
+      [qurbancare/care] BAN pen
+      pen diban
+      ```
 
 4. **Unban**
    Admin dapat melakukan unban pada user yang sudah berperilaku baik. Aktivitas unban tercatat pada `users.log`. Ketika di unban, role "banned" berubah kembali menjadi "user" dan dapat masuk ke dalam channel.
 
    - Contoh: 
 
-      *screenshot / copy terminal dari perintah unban
+      ```bash
+      [qurbancare/care] UNBAN pen
+      pen kembali
+      ```
 
 5. **Remove User**
    Admin dapat remove user dan tercatat pada `users.log`.
 
    - Contoh: 
 
-      *screenshot / copy terminal dari perintah remove user
+      ```
+      [qurbancare/care] REMOVE USER pen
+      pen dikick
+      ```
 
 ### E. User
 User dapat mengubah informasi profil mereka, user yang di ban tidak dapat masuk kedalam channel dan dapat keluar dari room, channel, atau keluar sepenuhnya dari DiscorIT.
@@ -290,13 +309,20 @@ User dapat mengubah informasi profil mereka, user yang di ban tidak dapat masuk 
 
    - Contoh : 
 
-      *screenshot / copy terminal dari perintah edit username
+      ```bash
+      [qurbancare] EDIT PROFILE SELF -u pen
+      Profil diupdate
+      [pen]
+      ```
    
 2. Edit user password
 
    - Contoh : 
 
-      *screenshot / copy terminal dari perintah edit password
+      ```bash
+      [qurbancare] EDIT PROFILE SELF -p pen123
+      Password diupdate
+      ```
 
 3. Banned user
    
@@ -304,7 +330,10 @@ User dapat mengubah informasi profil mereka, user yang di ban tidak dapat masuk 
 
    - Contoh : 
 
-      *screenshot / copy terminal dari banned user
+      ```bash
+      [qurbancare] JOIN care
+      anda telah diban, silahkan menghubungi admin
+      ```
 
 4. Exit
 
