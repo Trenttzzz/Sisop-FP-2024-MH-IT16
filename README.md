@@ -372,9 +372,35 @@ Jika ada command yang tidak sesuai penggunaannya. Maka akan mengeluarkan pesan e
    dapat dilihat bahwa program mengeluarkan output berupa pesan dan tidak keluar dari programnya.
 
 ### G. Monitor
-- User dapat menampilkan isi chat secara real-time menggunakan program monitor. Jika ada perubahan pada isi chat, perubahan tersebut akan langsung ditampilkan di terminal.
-- Sebelum dapat menggunakan monitor, pengguna harus login terlebih dahulu dengan cara yang mirip seperti login di DiscorIT.
-- Untuk keluar dari room dan menghentikan program monitor dengan perintah "EXIT".
-- Monitor dapat digunakan untuk menampilkan semua chat pada room, mulai dari chat pertama hingga chat yang akan datang nantinya.
+**Deskripsi:**
+Monitor adalah sebuah program yang memantau aktivitas chat server secara real-time. Program ini memungkinkan pengguna untuk melihat percakapan di saluran dan ruang tertentu serta memberikan kemampuan untuk beralih antar saluran dan ruang.
+
+#### Fitur Utama
+
+1. **Autentikasi**
+   - Pemilihan Channel dan Room: Program memungkinkan pengguna untuk memilih channel dan ruang dengan menggunakan perintah `-channel` dan `-room`.
+
+2. **Alur Kerja**
+
+   - **Pengecekan Command EXIT:** Fungsi `parse_command` memeriksa apakah perintah yang diberikan adalah `EXIT`. Jika pengguna berada dalam ruangan, sistem akan mengosongkan ruangan dengan mengirim perintah `EXIT`, menghapus status pengguna dari ruangan aktif.
+   
+   - **Penanganan Input `-channel` dan `-room`:** Setelah pengecekan EXIT, input pengguna diproses untuk perintah `-channel` dan `-room` untuk bergabung ke channel atau ruangan yang ditentukan.
+   
+   - **Monitor Loop:** Loop monitor memperbarui tampilan chat setiap 5 detik jika pengguna berada dalam ruangan.
+   
+   - **Thread Input User:** Input dari pengguna ditangani dalam thread baru untuk memastikan responsifitas program.
+   
+3. **Exiting**
+
+   - **Pengecekan Menggunakan strstr dan strcmp:** Pada saat keluar, program menggunakan `strstr` untuk memeriksa apakah perintah `EXIT` terdapat dalam input pengguna. Ini digunakan untuk keluar dari ruang atau channel. Program juga menggunakan `strcmp` untuk memeriksa apakah perintah keluar adalah untuk mengakhiri sesi monitor.
+
+#### Contoh Penggunaan
+
+Untuk menggunakan program ini, ikuti langkah-langkah berikut:
+
+1. Jalankan program Monitor.
+2. Masukkan perintah `-channel nama_channel` untuk bergabung ke sebuah channel.
+3. Gunakan perintah `-room nama_ruangan` untuk masuk ke ruangan tertentu di dalam channel tersebut.
+4. Saat ingin keluar, cukup ketik `EXIT`. Program akan memproses keluar dari ruangan atau mengakhiri sesi monitor, sesuai dengan konteks.
 
 
